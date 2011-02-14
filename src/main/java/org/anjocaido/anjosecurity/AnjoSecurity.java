@@ -243,6 +243,7 @@ public class AnjoSecurity extends JavaPlugin {
                     }
                 } else {
                     //here you should allow other commands to run (or not)
+                    
                     event.setCancelled(true);
                 }
             }
