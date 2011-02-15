@@ -165,10 +165,12 @@ public class AnjoSecurity extends JavaPlugin {
         } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
             event.setCancelled(true);
             alertLogin(p);
+            p.setHealth(20);
         } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
             if (getBoolSetting("opt-guests-lockdown")) {
                 event.setCancelled(true);
                 alertRegister(p);
+                p.setHealth(20);
             }
         }
     }
@@ -177,12 +179,12 @@ public class AnjoSecurity extends JavaPlugin {
         p.setHealth(20);
         if (rc.isRegistered(p)) {
             if (rc.logInByTime(p)) {
-                p.sendMessage(ChatColor.YELLOW+ getSetting("msg-login-time"));
+                p.sendMessage(ChatColor.YELLOW + getSetting("msg-login-time"));
             } else {
                 p.sendMessage(ChatColor.YELLOW + getSetting("msg-welcome-user"));
             }
         } else {
-            p.sendMessage(ChatColor.YELLOW+ getSetting("msg-welcome-guest"));
+            p.sendMessage(ChatColor.YELLOW + getSetting("msg-welcome-guest"));
             if (getBoolSetting("opt-guests-resetatlogin")) {
                 p.teleportTo(p.getWorld().getSpawnLocation());
                 p.getInventory().clear();
@@ -247,8 +249,10 @@ public class AnjoSecurity extends JavaPlugin {
                 } else {
                     if (rc.logInByPass(p, command[1])) {
                         p.sendMessage(ChatColor.YELLOW + getSetting("msg-login-pass"));
+                        p.setHealth(20);
                     } else {
                         p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-login-incorrect"));
+                        p.setHealth(20);
                     }
                     event.setCancelled(false);
                 }
@@ -267,7 +271,7 @@ public class AnjoSecurity extends JavaPlugin {
                 } else {
                     if (rc.registerPlayer(p, command[1])) {
                         p.sendMessage(ChatColor.YELLOW + getSetting("msg-register-successful"));
-                        p.sendMessage(ChatColor.RED + "Remember, your password is: "+command[1]);
+                        p.sendMessage(ChatColor.RED + "Remember, your password is: " + command[1]);
                     } else {
                         p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-register-failed"));
                     }

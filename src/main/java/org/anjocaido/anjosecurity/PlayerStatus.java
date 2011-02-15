@@ -9,6 +9,5 @@ package org.anjocaido.anjosecurity;
  * @author gabrielcouto
  */
 public enum PlayerStatus {
-
     LOGGED_IN, NOT_LOGGED_IN, NOT_REGISTERED
 }
