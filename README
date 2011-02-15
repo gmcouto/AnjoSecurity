@@ -1,0 +1,60 @@
+=============================================================================
+AnjoSecurity Plugin v1.0 (for Bukkit v0.1)
+=============================================================================
+Created by Gabriel Couto and AnjoCaido
+
+This plugin is intended to help people while the server is in offline-mode. It
+happens when minecraft.net. But it is a feature largely used on lan houses.
+
+=============================================================================
+REQUIREMENTES
+=============================================================================
+- Minecraft Server Beta 1.2_02
+- Bukkit 0.1
+
+=============================================================================
+WHAT IT DOES
+=============================================================================
+It manages a user database with password, so users can protect their usernames
+in offline-mode.
+
+It stores hashed passwords in an SQLite database, to increase security, make
+it easier to other plugins to access it and increase speed in big servers.
+
+Every user that is registered on the server can do absolutely nothing, until
+they log in with their passwords. This prevents people stealing loot and abuse
+of other someone's permission rights.
+
+=============================================================================
+COMMANDS
+=============================================================================
+/register <password>
+/login <password>
+/reset <password>
+/adminreset <username>
+
+=============================================================================
+OPTIONS
+=============================================================================
+When you first run the server with AnjoSecurity.jar, it creates a default
+settings.properties file on it's default folder.
+
+There you can translate messages, or set up some options, same as below:
+
+1- opt-main-admins=AnjoCaido,gmcouto
+this one means that AnjoCaido and gmcouto, while logged-in, can use
+/adminreset to reset other people registration(*delete* registration)
+
+2- opt-guests-resetatlogin=true
+this enables that all guests(users not
+registered) lose all their loot and get teleported to spawn at every login.
+
+3- opt-guests-lockdown=true
+this enables that all guest are totally
+locked-down. just the same as they were registered, but not logged in.
+
+4- opt-guests-summoncommands=true
+this enables guests to use commands... just like /help and other things as
+other plugins let them to. change true to false to make them not use
+commands. (this can prevent new people on your server spamming commands while
+no admin is connected)

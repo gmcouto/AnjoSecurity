@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,6 +41,7 @@ public class AnjoSecurity extends JavaPlugin {
     private Properties queries;
     private RegistrationControl rc;
     private String settingsFileName = "settings.properties";
+    private Map<String, Long> lastAlert = new HashMap<String, Long>();
 
     public AnjoSecurity(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
@@ -53,7 +55,7 @@ public class AnjoSecurity extends JavaPlugin {
             try {
                 settings.load(is);
                 OutputStream os = new FileOutputStream(settingsFile);
-                settings.store(os, "Settings of this plugin");
+                settings.store(os, "Settings for AnjoSecurity. 'msg keys are pure strings, edit as you please. 'opt keys might not be always string, you should be careful.  opt-main-admins are the admins that can delete registrations, separate their names with commas.");
             } catch (IOException ex) {
                 Logger.getLogger(AnjoSecurity.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -104,23 +106,23 @@ public class AnjoSecurity extends JavaPlugin {
 
         // Register our events
         PluginManager pm = getServer().getPluginManager();
-        pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_DROP_ITEM, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_ITEM, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_PICKUP_ITEM, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_TOGGLE_SNEAK, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_LOGIN, playerListener, Priority.Normal, this);
+        pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Priority.Lowest, this);
+        pm.registerEvent(Event.Type.PLAYER_DROP_ITEM, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_ITEM, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_PICKUP_ITEM, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_TOGGLE_SNEAK, playerListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Lowest, this);
+        pm.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Highest, this);
+        //pm.registerEvent(Event.Type.PLAYER_LOGIN, playerListener, Priority.Highest, this);
 
-        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.BLOCK_DAMAGED, blockListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.BLOCK_IGNITE, blockListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.BLOCK_INTERACT, blockListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.BLOCK_PLACED, blockListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Normal, this);
+        pm.registerEvent(Event.Type.BLOCK_BREAK, blockListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.BLOCK_DAMAGED, blockListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.BLOCK_IGNITE, blockListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.BLOCK_INTERACT, blockListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.BLOCK_PLACED, blockListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);
 
 
         // EXAMPLE: Custom code, here we just output some info so we can check all is well
@@ -148,105 +150,161 @@ public class AnjoSecurity extends JavaPlugin {
         return settings.getProperty(name);
     }
 
+    public boolean getBoolSetting(String name) {
+        String setting = getSetting(name);
+        return Boolean.parseBoolean(setting);
+    }
+
     public RegistrationControl getRegistrationControl() {
         return rc;
     }
 
     public void handleCancellable(Player p, Cancellable event) {
-        if (rc.isLoggedIn(p)) {
-            //everything OK
-        } else {
-            if (rc.isRegistered(p)) {
-                //deny actions
+        PlayerStatus status = rc.getStatus(p);
+        if (status.equals(PlayerStatus.LOGGED_IN)) {
+        } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
+            event.setCancelled(true);
+            alertLogin(p);
+        } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
+            if (getBoolSetting("opt-guests-lockdown")) {
                 event.setCancelled(true);
-            } else {
-                //verify if not registered users are denied
+                alertRegister(p);
             }
         }
     }
 
-    public void handleCanBuild(Player p, BlockCanBuildEvent event) {
-        if (rc.isLoggedIn(p)) {
-            //everything OK
-        } else {
-            if (rc.isRegistered(p)) {
-                //deny actions
-                event.setBuildable(false);
-            } else {
-                //verify if not registered users are denied
-            }
-        }
-    }
     public void handlePlayerJoin(Player p) {
+        p.setHealth(20);
         if (rc.isRegistered(p)) {
             if (rc.logInByTime(p)) {
-                p.sendMessage(getSetting("msg-login-time"));
+                p.sendMessage(ChatColor.YELLOW+ getSetting("msg-login-time"));
             } else {
-                p.sendMessage(getSetting("msg-welcome-user"));
+                p.sendMessage(ChatColor.YELLOW + getSetting("msg-welcome-user"));
             }
         } else {
-            p.sendMessage(getSetting("msg-welcome-guest"));
-        }
-    }
-    public void handlePlayerLogin(PlayerLoginEvent event) {
-        Player p = event.getPlayer();
-        if (rc.isRegistered(p)) {
-            if (rc.logInByTime(p)) {
-                p.sendMessage(getSetting("msg-login-time"));
-            } else {
-                p.sendMessage(getSetting("msg-welcome-user"));
+            p.sendMessage(ChatColor.YELLOW+ getSetting("msg-welcome-guest"));
+            if (getBoolSetting("opt-guests-resetatlogin")) {
+                p.teleportTo(p.getWorld().getSpawnLocation());
+                p.getInventory().clear();
+                p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-action-resetting"));
             }
-        } else {
-            p.sendMessage(getSetting("msg-welcome-guest"));
         }
     }
+
     public void handlePlayerLogOut(Player p) {
         if (rc.isLoggedIn(p)) {
             rc.logOut(p);
         }
     }
-    public void handleCommand(PlayerChatEvent event){
+
+    public void handleCommand(PlayerChatEvent event) {
         Player p = event.getPlayer();
         String[] command = event.getMessage().split(" ");
-        if (rc.isLoggedIn(p)) {
-            //leaves blank, it means everything is OK
-        } else {
-            if (rc.isRegistered(p)) {
-                //should deny actions not expected
-
-
-                if(command[0].equalsIgnoreCase("/login")){
-                    if(command.length!=2){
-                        p.sendMessage(ChatColor.LIGHT_PURPLE+"Usage: /login <password>");
+        PlayerStatus status = rc.getStatus(p);
+        if (status.equals(PlayerStatus.LOGGED_IN)) {
+            //everything OK
+            if (command[0].equalsIgnoreCase("/reset")) {
+                event.setMessage("/reset ********");
+                if (command.length != 2) {
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /reset <password>");
+                } else {
+                    if (rc.unregisterPlayer(p, command[1])) {
+                        p.sendMessage(ChatColor.YELLOW + getSetting("msg-unregister-successful"));
                     } else {
-                        if(rc.logInByPass(p, command[1])){
-                            p.sendMessage(ChatColor.YELLOW+getSetting("msg-login-pass"));
-                        } else {
-                            p.sendMessage(ChatColor.LIGHT_PURPLE+getSetting("msg-login-incorrect"));
+                        p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-unregister-failed"));
+                    }
+                    event.setCancelled(false);
+                }
+            } else if (command[0].equalsIgnoreCase("/adminreset")) {
+                if (command.length != 2) {
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /reset <username>");
+                } else {
+                    event.setMessage("/adminreset " + command[1]);
+                    String[] admins = getSetting("opt-main-admins").split(",");
+                    boolean isAdmin = false;
+                    for (String adm : admins) {
+                        if (adm.equalsIgnoreCase(p.getName())) {
+                            isAdmin = true;
+                            break;
                         }
                     }
+                    if (isAdmin) {
+                        if (rc.deletePlayer(command[1])) {
+                            p.sendMessage(ChatColor.YELLOW + getSetting("msg-delete-successful"));
+                        } else {
+                            p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-delete-failed"));
+                        }
+                    }
+                    event.setCancelled(false);
+                }
+            }
+        } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
+            //should deny actions not expected
+            if (command[0].equalsIgnoreCase("/login")) {
+                event.setMessage("/login ********");
+                if (command.length != 2) {
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /login <password>");
                 } else {
-                    //any command other than /login while not logged in should be ignored
-                    event.setCancelled(true);
+                    if (rc.logInByPass(p, command[1])) {
+                        p.sendMessage(ChatColor.YELLOW + getSetting("msg-login-pass"));
+                    } else {
+                        p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-login-incorrect"));
+                    }
+                    event.setCancelled(false);
                 }
             } else {
-                //need verify if not registered users are denied do other commands
-                if(command[0].equalsIgnoreCase("/register")){
-                    if(command.length!=2){
-                        p.sendMessage(ChatColor.LIGHT_PURPLE+"Usage: /register <password>");
-                    } else {
-                        if(rc.registerPlayer(p, command[1])){
-                            p.sendMessage(ChatColor.YELLOW+getSetting("msg-register-successful").replaceFirst("?", (ChatColor.RED+command[1]+ChatColor.YELLOW))+" ");
-                        } else {
-                            p.sendMessage(ChatColor.YELLOW+getSetting("msg-register-failed"));
-                        }
-                    }
+                //any command other than /login while not logged in should be ignored
+                event.setCancelled(true);
+                event.setMessage("/unallowedcommand");
+                alertLogin(p);
+            }
+        } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
+            //need verify if not registered users are denied do other commands
+            if (command[0].equalsIgnoreCase("/register")) {
+                event.setMessage("/register ********");
+                if (command.length != 2) {
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /register <password>");
                 } else {
-                    //here you should allow other commands to run (or not)
-                    
+                    if (rc.registerPlayer(p, command[1])) {
+                        p.sendMessage(ChatColor.YELLOW + getSetting("msg-register-successful"));
+                        p.sendMessage(ChatColor.RED + "Remember, your password is: "+command[1]);
+                    } else {
+                        p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-register-failed"));
+                    }
+                    event.setCancelled(false);
+                }
+            } else {
+                //here you should allow other commands to run (or not)
+                if (!getBoolSetting("opt-guests-summoncommands")) {
                     event.setCancelled(true);
+                    event.setMessage("/unallowedcommand");
+                    alertRegister(p);
                 }
             }
         }
+    }
+
+    public void alertLogin(Player p) {
+        Long lastA = 0L;
+        if (lastAlert.containsKey(p.getName().toLowerCase())) {
+            lastA = lastAlert.remove(p.getName().toLowerCase());
+        }
+        if ((lastA + 5000) < System.currentTimeMillis()) {
+            p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-unallowed-needlogin"));
+            lastA = System.currentTimeMillis();
+        }
+        lastAlert.put(p.getName().toLowerCase(), lastA);
+    }
+
+    public void alertRegister(Player p) {
+        Long lastA = 0L;
+        if (lastAlert.containsKey(p.getName().toLowerCase())) {
+            lastA = lastAlert.remove(p.getName().toLowerCase());
+        }
+        if ((lastA + 5000) < System.currentTimeMillis()) {
+            p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-unallowed-needregister"));
+            lastA = System.currentTimeMillis();
+        }
+        lastAlert.put(p.getName().toLowerCase(), lastA);
     }
 }

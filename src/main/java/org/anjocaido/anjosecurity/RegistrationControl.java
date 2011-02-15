@@ -55,12 +55,49 @@ public class RegistrationControl {
     public boolean registerPlayer(Player player, String password) {
         try {
             PreparedStatement stm = connDB.prepareStatement(plugin.getQuery("sql-register"));
-            stm.setString(1, player.getName());
+            stm.setString(1, player.getName().toLowerCase());
             stm.setString(2, md5(password));
             stm.setLong(3, System.currentTimeMillis());
             stm.setLong(4, System.currentTimeMillis());
             stm.setString(5, player.getAddress().getHostName());
             stm.execute();
+            if(isRegistered(player))
+                return true;
+        } catch (SQLException ex) {
+            Logger.getLogger(RegistrationControl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return false;
+    }
+
+    public boolean unregisterPlayer(Player player, String password){
+        if(!isRegistered(player)){
+            return false;
+        }
+        if(!isLoggedIn(player)){
+            return false;
+        }
+        try {
+            PreparedStatement stm = connDB.prepareStatement(plugin.getQuery("sql-unregister"));
+            stm.setString(1, player.getName().toLowerCase());
+            stm.setString(2, md5(password));
+            stm.execute();
+            if(isRegistered(player))
+                return false;
+            logOut(player);
+            return true;
+        } catch (SQLException ex) {
+            Logger.getLogger(RegistrationControl.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return false;
+    }
+    public boolean deletePlayer(String player){
+        try {
+            PreparedStatement stm = connDB.prepareStatement(plugin.getQuery("sql-delete"));
+            stm.setString(1, player.toLowerCase());
+            stm.execute();
+            if(loggedUsers.containsKey(player.toLowerCase())){
+                loggedUsers.remove(player.toLowerCase());
+            }
             return true;
         } catch (SQLException ex) {
             Logger.getLogger(RegistrationControl.class.getName()).log(Level.SEVERE, null, ex);
@@ -70,7 +107,7 @@ public class RegistrationControl {
 
     public boolean isLoggedIn(Player player) {
         boolean logged = false;
-        if (loggedUsers.containsKey(player.getName())) {
+        if (loggedUsers.containsKey(player.getName().toLowerCase())) {
             logged = true;
         }
         return logged;
@@ -79,7 +116,7 @@ public class RegistrationControl {
     public boolean isRegistered(Player player) {
          try {
             PreparedStatement stm = connDB.prepareStatement(plugin.getQuery("sql-verify-registration"));
-            stm.setString(1, player.getName());
+            stm.setString(1, player.getName().toLowerCase());
             ResultSet rs = stm.executeQuery();
             if (rs.next()) {
                 return true;
@@ -90,9 +127,19 @@ public class RegistrationControl {
         return false;
     }
 
+    public PlayerStatus getStatus(Player p){
+        if(isLoggedIn(p)){
+            return PlayerStatus.LOGGED_IN;
+        }
+        if(isRegistered(p)){
+            return PlayerStatus.NOT_LOGGED_IN;
+        }
+        return PlayerStatus.NOT_REGISTERED;
+    }
+
     public void logOut(Player player) {
         try {
-            loggedUsers.remove(player.getName());
+            loggedUsers.remove(player.getName().toLowerCase());
         } catch (Exception ex) {
         }
     }
@@ -100,13 +147,13 @@ public class RegistrationControl {
     public boolean logInByTime(Player player) {
         try {
             PreparedStatement stm = connDB.prepareStatement(plugin.getQuery("sql-login-time"));
-            stm.setString(1, player.getName());
+            stm.setString(1, player.getName().toLowerCase());
             stm.setString(2, player.getAddress().getHostName());
             ResultSet rs = stm.executeQuery();
             if (rs.next()) {
                 long lastL = rs.getLong(1);
                 if ((lastL + 600000) > System.currentTimeMillis()) { //if last login was less than 10 minutes ago
-                    loggedUsers.put(player.getName(), player);
+                    loggedUsers.put(player.getName().toLowerCase(), player);
                     return true;
                 }
             }
@@ -121,11 +168,11 @@ public class RegistrationControl {
             PreparedStatement stm = connDB.prepareStatement(plugin.getQuery("sql-login-pass"));
             stm.setLong(1, System.currentTimeMillis());
             stm.setString(2, player.getAddress().getHostName());
-            stm.setString(3, player.getName());
+            stm.setString(3, player.getName().toLowerCase());
             stm.setString(4, md5(password));
             int r = stm.executeUpdate();
             if (r > 0) {
-                loggedUsers.put(player.getName(), player);
+                loggedUsers.put(player.getName().toLowerCase(), player);
                 return true;
             }
         } catch (SQLException ex) {

@@ -58,7 +58,6 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      * @param event Relevant event details
      */
     public void onPlayerChat(PlayerChatEvent event) {
-        System.out.println("chat: "+event.getMessage());
         Player p = event.getPlayer();
         plugin.handleCancellable(p, event);
     }
@@ -69,7 +68,6 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      * @param event Relevant event details
      */
     public void onPlayerCommand(PlayerChatEvent event) {
-        System.out.println("command: "+event.getMessage());
         plugin.handleCommand(event);
     }
 
