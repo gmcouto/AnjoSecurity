@@ -66,7 +66,9 @@ public class AnjoSecurityBlockListener extends BlockListener {
      */
     public void onBlockIgnite(BlockIgniteEvent event) {
         Player p = event.getPlayer();
-        plugin.handleCancellable(p, event);
+        if (p != null) {
+            plugin.handleCancellable(p, event);
+        }
     }
 
     /**
@@ -115,7 +117,6 @@ public class AnjoSecurityBlockListener extends BlockListener {
      * @param event Relevant event details
      */
     public void onBlockRedstoneChange(BlockRedstoneEvent event) {
-
     }
 
     /**

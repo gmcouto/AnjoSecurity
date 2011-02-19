@@ -4,9 +4,6 @@
  */
 package org.anjocaido.anjosecurity;
 
-import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.*;
 
@@ -40,7 +37,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      * @param event Relevant event details
      */
     public void onPlayerQuit(PlayerEvent event) {
-        System.out.println("LogOut!");
+        //System.out.println("LogOut!");
         plugin.handlePlayerLogOut(event.getPlayer());
     }
 

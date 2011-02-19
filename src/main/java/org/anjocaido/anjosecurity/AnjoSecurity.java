@@ -21,12 +21,21 @@ import org.bukkit.entity.Player;
 import org.bukkit.Server;
 import org.bukkit.event.*;
 import org.bukkit.event.Event.*;
-import org.bukkit.event.block.*;
 import org.bukkit.event.player.*;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import com.nijiko.permissions.PermissionHandler;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.inventory.PlayerInventory;
 
 /**
  *
@@ -36,59 +45,55 @@ public class AnjoSecurity extends JavaPlugin {
 
     private final AnjoSecurityPlayerListener playerListener;
     private final AnjoSecurityBlockListener blockListener;
-    private final HashMap<Player, Boolean> debugees;
-    private Properties settings;
+    private final AnjoSecurityEntityListener entityListener;
+    public Settings settings;
     private Properties queries;
     private RegistrationControl rc;
-    private String settingsFileName = "settings.properties";
+    private String settingsFileName = "config.yml";
+    private File settingsFile;
     private Map<String, Long> lastAlert = new HashMap<String, Long>();
+    private boolean registrationsAllowed;
+    public static PermissionHandler Permissions = null;
+    public PermissionsDealer permDealer;
+    public ArrayList<String> godModeList = new ArrayList<String>();
+    ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(2);
+    public ArrayList<String> allowedList = new ArrayList<String>();
+
+    public class GodModeRemover implements Runnable {
+
+        public String name;
+
+        public GodModeRemover(String playerName) {
+            name = playerName;
+        }
+
+        @Override
+        public void run() {
+            //System.out.println("NOT GOD ANYMORE");
+            AnjoSecurity.this.godModeList.remove(name);
+        }
+    }
 
     public AnjoSecurity(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
         if (!this.getDataFolder().exists()) {
             this.getDataFolder().mkdirs();
         }
-        File settingsFile = new File(this.getDataFolder(), settingsFileName);
-        if (!(settingsFile).exists()) {
-            InputStream is = this.getClassLoader().getResourceAsStream("settings.properties");
-            settings = new Properties();
-            try {
-                settings.load(is);
-                OutputStream os = new FileOutputStream(settingsFile);
-                settings.store(os, "Settings for AnjoSecurity. 'msg keys are pure strings, edit as you please. 'opt keys might not be always string, you should be careful.  opt-main-admins are the admins that can delete registrations, separate their names with commas.");
-            } catch (IOException ex) {
-                Logger.getLogger(AnjoSecurity.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } else {
-            try {
-                InputStream is = new FileInputStream(settingsFile);
-                settings = new Properties();
-                settings.load(is);
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(AnjoSecurity.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                InputStream is = this.getClassLoader().getResourceAsStream("settings.properties");
-                settings = new Properties();
-                try {
-                    settings.load(is);
-                } catch (IOException ex1) {
-                    Logger.getLogger(AnjoSecurity.class.getName()).log(Level.SEVERE, null, ex1);
-                }
-            }
-        }
-        InputStream is = this.getClassLoader().getResourceAsStream("queries.properties");
-        queries = new Properties();
-        try {
-            queries.load(is);
-        } catch (IOException ex) {
-            Logger.getLogger(AnjoSecurity.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        rc = new RegistrationControl(this);
-
+        settingsFile = new File(this.getDataFolder(), settingsFileName);
         //
-        debugees = new HashMap<Player, Boolean>();
+        //
+        //
+        settings = new Settings(settingsFile);
+        registrationsAllowed = settings.isRegistrationEnabled();
+        //
+        loadQueries();
+        //
+        rc = new RegistrationControl(this);
+        //
         playerListener = new AnjoSecurityPlayerListener(this);
         blockListener = new AnjoSecurityBlockListener(this);
+        entityListener = new AnjoSecurityEntityListener(this);
+
 
     }
 
@@ -98,12 +103,14 @@ public class AnjoSecurity extends JavaPlugin {
         // NOTE: All registered events are automatically unregistered when a plugin is disabled
 
         // EXAMPLE: Custom code, here we just output some info so we can check all is well
-        System.out.println("Goodbye world!");
+        //System.out.println("Goodbye world!");
+        PluginDescriptionFile pdfFile = this.getDescription();
+        System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " is disabled!");
+
     }
 
     public void onEnable() {
         // TODO: Place any custom enable code here including the registration of any events
-
         // Register our events
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Highest, this);
@@ -124,35 +131,24 @@ public class AnjoSecurity extends JavaPlugin {
         pm.registerEvent(Event.Type.BLOCK_PLACED, blockListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);
 
+        pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Highest, this);
+        pm.registerEvent(Event.Type.ENTITY_TARGET, entityListener, Priority.Highest, this);
+
+
+        //Permissions
+        permDealer = new PermissionsDealer(this.getServer());
 
         // EXAMPLE: Custom code, here we just output some info so we can check all is well
         PluginDescriptionFile pdfFile = this.getDescription();
         System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " is enabled!");
     }
 
-    public boolean isDebugging(final Player player) {
-        if (debugees.containsKey(player)) {
-            return debugees.get(player);
-        } else {
-            return false;
-        }
-    }
-
-    public void setDebugging(final Player player, final boolean value) {
-        debugees.put(player, value);
-    }
-
     public String getQuery(String name) {
         return queries.getProperty(name);
-    }
-
-    public String getSetting(String name) {
-        return settings.getProperty(name);
-    }
-
-    public boolean getBoolSetting(String name) {
-        String setting = getSetting(name);
-        return Boolean.parseBoolean(setting);
     }
 
     public RegistrationControl getRegistrationControl() {
@@ -160,14 +156,22 @@ public class AnjoSecurity extends JavaPlugin {
     }
 
     public void handleCancellable(Player p, Cancellable event) {
+        if (event instanceof EntityDamageEvent && godModeList.contains(p.getName().toLowerCase())) {
+            event.setCancelled(true);
+        }
+        if (p == null) {
+            event.setCancelled(true);
+            return;
+        }
         PlayerStatus status = rc.getStatus(p);
         if (status.equals(PlayerStatus.LOGGED_IN)) {
         } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
             event.setCancelled(true);
             alertLogin(p);
             p.setHealth(20);
+
         } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
-            if (getBoolSetting("opt-guests-lockdown")) {
+            if (settings.isOptGuestsLockdown()) {
                 event.setCancelled(true);
                 alertRegister(p);
                 p.setHealth(20);
@@ -175,115 +179,203 @@ public class AnjoSecurity extends JavaPlugin {
         }
     }
 
-    public void handlePlayerJoin(Player p) {
-        p.setHealth(20);
-        if (rc.isRegistered(p)) {
-            if (rc.logInByTime(p)) {
-                p.sendMessage(ChatColor.YELLOW + getSetting("msg-login-time"));
-            } else {
-                p.sendMessage(ChatColor.YELLOW + getSetting("msg-welcome-user"));
+    public void handleEntityDeath(EntityDeathEvent event) {
+        if (event.getEntity() instanceof Player) {
+            Player p = (Player) event.getEntity();
+            PlayerStatus status = rc.getStatus(p);
+            if (status.equals(PlayerStatus.LOGGED_IN)) {
+            } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
+                event.getDrops().clear();
+                p.setHealth(20);
+            } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
+                if (settings.isOptGuestsLockdown()) {
+                    event.getDrops().clear();
+                    p.setHealth(20);
+                }
             }
-        } else {
-            p.sendMessage(ChatColor.YELLOW + getSetting("msg-welcome-guest"));
-            if (getBoolSetting("opt-guests-resetatlogin")) {
-                p.teleportTo(p.getWorld().getSpawnLocation());
-                p.getInventory().clear();
-                p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-action-resetting"));
+        }
+    }
+
+    public void handlePlayerJoin(Player p) {
+        if (p != null) {
+            if (rc.isRegistered(p)) {
+                if (rc.logInByTime(p)) {
+                    p.sendMessage(ChatColor.YELLOW + settings.getMsgLoginTime());
+                } else {
+                    if (permDealer == null) {
+                        permDealer = new PermissionsDealer(this.getServer());
+                    }
+                    p.sendMessage(ChatColor.YELLOW + settings.getMsgWelcomeUser());
+                    if (permDealer != null) {
+                        permDealer.markAsNotLoggedIn(p.getName());
+                    }
+                }
+            } else {
+                p.sendMessage(ChatColor.YELLOW + settings.getMsgWelcomeGuest());
+                if (settings.isOptGuestsResetAtLogin()) {
+                    World w = p.getWorld();
+                    if (w != null) {
+                        Location l = w.getSpawnLocation();
+                        if (l != null) {
+                            p.teleportTo(l);
+                        }
+                    }
+                    PlayerInventory inv = p.getInventory();
+                    if (inv != null) {
+                        p.getInventory().clear();
+                    }
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgActionResetting());
+                }
+                if (!settings.isOptGuestsSummonCommands()) {
+                    permDealer.markAsNotRegistered(p.getName());
+                }
             }
         }
     }
 
     public void handlePlayerLogOut(Player p) {
-        if (rc.isLoggedIn(p)) {
-            rc.logOut(p);
+        if (p != null) {
+            if (rc.isLoggedIn(p)) {
+                rc.logOut(p);
+            }
         }
     }
 
     public void handleCommand(PlayerChatEvent event) {
         Player p = event.getPlayer();
-        String[] command = event.getMessage().split(" ");
+        if (p == null) {
+            event.setCancelled(true);
+            return;
+        }
         PlayerStatus status = rc.getStatus(p);
         if (status.equals(PlayerStatus.LOGGED_IN)) {
             //everything OK
-            if (command[0].equalsIgnoreCase("/reset")) {
-                event.setMessage("/reset ********");
-                if (command.length != 2) {
-                    p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /reset <password>");
-                } else {
-                    if (rc.unregisterPlayer(p, command[1])) {
-                        p.sendMessage(ChatColor.YELLOW + getSetting("msg-unregister-successful"));
-                    } else {
-                        p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-unregister-failed"));
-                    }
-                    event.setCancelled(false);
-                }
-            } else if (command[0].equalsIgnoreCase("/adminreset")) {
-                if (command.length != 2) {
-                    p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /reset <username>");
-                } else {
-                    event.setMessage("/adminreset " + command[1]);
-                    String[] admins = getSetting("opt-main-admins").split(",");
-                    boolean isAdmin = false;
-                    for (String adm : admins) {
-                        if (adm.equalsIgnoreCase(p.getName())) {
-                            isAdmin = true;
-                            break;
-                        }
-                    }
-                    if (isAdmin) {
-                        if (rc.deletePlayer(command[1])) {
-                            p.sendMessage(ChatColor.YELLOW + getSetting("msg-delete-successful"));
-                        } else {
-                            p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-delete-failed"));
-                        }
-                    }
-                    event.setCancelled(false);
-                }
-            }
+            handleCommandsWhileLoggedIn(event);
         } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
             //should deny actions not expected
-            if (command[0].equalsIgnoreCase("/login")) {
-                event.setMessage("/login ********");
-                if (command.length != 2) {
-                    p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /login <password>");
-                } else {
-                    if (rc.logInByPass(p, command[1])) {
-                        p.sendMessage(ChatColor.YELLOW + getSetting("msg-login-pass"));
-                        p.setHealth(20);
-                    } else {
-                        p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-login-incorrect"));
-                        p.setHealth(20);
-                    }
-                    event.setCancelled(false);
-                }
-            } else {
-                //any command other than /login while not logged in should be ignored
-                event.setCancelled(true);
-                event.setMessage("/unallowedcommand");
-                alertLogin(p);
-            }
+            handleCommandsWhileNOTLoggetIn(event);
         } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
-            //need verify if not registered users are denied do other commands
-            if (command[0].equalsIgnoreCase("/register")) {
-                event.setMessage("/register ********");
+            handleCommandsWhileGuestMode(event);
+        }
+    }
+
+    public void handleCommandsWhileLoggedIn(PlayerChatEvent event) {
+        Player p = event.getPlayer();
+        String[] command = event.getMessage().split(" ");
+        if (command[0].equalsIgnoreCase("/reset")) {
+            event.setMessage("/reset ********");
+            if (command.length != 2) {
+                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /reset <password>");
+            } else {
+                if (rc.unregisterPlayer(p, command[1])) {
+                    p.sendMessage(ChatColor.YELLOW + settings.getMsgUnregisterSucessful());
+                } else {
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgUnregisterFailed());
+                }
+            }
+        } else if (command[0].equalsIgnoreCase("/adminreset")) {
+            if (command.length != 2) {
+                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /reset <username>");
+            } else {
+                if (isAdmin(p.getName())) {
+                    if (rc.deletePlayer(command[1])) {
+                        p.sendMessage(ChatColor.YELLOW + settings.getMsgDeleteSucessful());
+                    } else {
+                        p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgDeleteFailed());
+                    }
+                } else {
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgNotAdmin());
+                }
+            }
+        } else if (command[0].equalsIgnoreCase("/adminallow")) {
+            if (command.length != 2) {
+                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /adminallow <username>");
+            } else {
+                if (isAdmin(p.getName())) {
+                    List<Player> victim = this.getServer().matchPlayer(command[1]);
+                    if (victim.size() == 1) {
+                        allowedList.add(victim.get(0).getName().toLowerCase());
+                        p.sendMessage(ChatColor.YELLOW + settings.getMsgAllowedSuccessful());
+                        victim.get(0).sendMessage(ChatColor.GOLD+settings.getMsgAlertAllowed());
+                    } else {
+                        p.sendMessage(ChatColor.YELLOW + settings.getMsgAllowedFailed());
+                    }
+                } else {
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgNotAdmin());
+                }
+            }
+        } else if (command[0].equalsIgnoreCase("/toggleregistration")) {
+            if (command.length != 1) {
+                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /toggleregistration");
+            } else {
+                if (isAdmin(p.getName())) {
+                    registrationsAllowed = !registrationsAllowed;
+                    settings.setRegistrationEnabled(registrationsAllowed);
+                    settings.save();
+                    if (registrationsAllowed) {
+                        p.sendMessage(ChatColor.YELLOW + settings.getMsgRegistrationActivated());
+                    } else {
+                        p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgRegistrationDeactivated());
+                    }
+                }
+            }
+        }
+    }
+
+    public void handleCommandsWhileNOTLoggetIn(PlayerChatEvent event) {
+        Player p = event.getPlayer();
+        String[] command = event.getMessage().split(" ");
+        if (command[0].equalsIgnoreCase("/login")) {
+            event.setMessage("/login ********");
+            if (command.length != 2) {
+                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /login <password>");
+            } else {
+                if (rc.logInByPass(p, command[1])) {
+                    p.sendMessage(ChatColor.YELLOW + settings.getMsgLoginPass());
+                    p.setHealth(20);
+                    permDealer.restorePermissions(p.getName());
+                    godModeList.add(p.getName().toLowerCase());
+                    scheduler.schedule(new GodModeRemover(p.getName().toLowerCase()), 5, TimeUnit.SECONDS);
+                } else {
+                    p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgLoginIcorrect());
+                }
+            }
+        } else {
+            event.setMessage("/unallowedcommand");
+            event.setCancelled(true);
+        }
+    }
+
+    public void handleCommandsWhileGuestMode(PlayerChatEvent event) {
+        Player p = event.getPlayer();
+        String[] command = event.getMessage().split(" ");
+        //need verify if not registered users are denied do other commands
+        if (command[0].equalsIgnoreCase("/register")) {
+            event.setMessage("/register ********");
+            if (registrationsAllowed || allowedList.contains(p.getName().toLowerCase())) {
+
                 if (command.length != 2) {
                     p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /register <password>");
                 } else {
                     if (rc.registerPlayer(p, command[1])) {
-                        p.sendMessage(ChatColor.YELLOW + getSetting("msg-register-successful"));
+                        p.sendMessage(ChatColor.YELLOW + settings.getMsgRegisterSucessful());
                         p.sendMessage(ChatColor.RED + "Remember, your password is: " + command[1]);
+                        permDealer.restorePermissions(p.getName());
+                        permDealer.markAsNotRegistered(p.getName());
+                        if(allowedList.contains(p.getName().toLowerCase())){
+                            allowedList.remove(p.getName().toLowerCase());
+                        }
                     } else {
-                        p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-register-failed"));
+                        p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgRegisterFailed());
                     }
-                    event.setCancelled(false);
                 }
             } else {
-                //here you should allow other commands to run (or not)
-                if (!getBoolSetting("opt-guests-summoncommands")) {
-                    event.setCancelled(true);
-                    event.setMessage("/unallowedcommand");
-                    alertRegister(p);
-                }
+                p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgRegistrationUnallowed());
+            }
+        } else {
+            if (!settings.isOptGuestsSummonCommands() || settings.isOptGuestsLockdown()) {
+                event.setMessage("/unallowedcommand");
+                event.setCancelled(true);
             }
         }
     }
@@ -294,7 +386,7 @@ public class AnjoSecurity extends JavaPlugin {
             lastA = lastAlert.remove(p.getName().toLowerCase());
         }
         if ((lastA + 5000) < System.currentTimeMillis()) {
-            p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-unallowed-needlogin"));
+            p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgUnallowedNeedLogin());
             lastA = System.currentTimeMillis();
         }
         lastAlert.put(p.getName().toLowerCase(), lastA);
@@ -306,9 +398,32 @@ public class AnjoSecurity extends JavaPlugin {
             lastA = lastAlert.remove(p.getName().toLowerCase());
         }
         if ((lastA + 5000) < System.currentTimeMillis()) {
-            p.sendMessage(ChatColor.LIGHT_PURPLE + getSetting("msg-unallowed-needregister"));
+            p.sendMessage(ChatColor.LIGHT_PURPLE + settings.getMsgUnallowedNeedRegister());
             lastA = System.currentTimeMillis();
         }
         lastAlert.put(p.getName().toLowerCase(), lastA);
+    }
+
+    private boolean isAdmin(String playerName) {
+        if (playerName.length() < 3) {
+            return false;
+        }
+        List<String> admins = settings.getOptMainAdmins();
+        for (String adm : admins) {
+            if (adm.equalsIgnoreCase(playerName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void loadQueries() {
+        try {
+            InputStream queriesStream = this.getClassLoader().getResourceAsStream("queries.properties");
+            queries = new Properties();
+            queries.load(queriesStream);
+        } catch (IOException ex) {
+            Logger.getLogger(AnjoSecurity.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }
