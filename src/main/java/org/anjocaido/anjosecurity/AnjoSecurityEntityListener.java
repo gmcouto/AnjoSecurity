@@ -28,27 +28,6 @@ public class AnjoSecurityEntityListener extends EntityListener {
     }
 
     @Override
-    public void onEntityDamageByBlock(EntityDamageByBlockEvent event) {
-        if (event.getEntity() instanceof Player) {
-            Player p = (Player) event.getEntity();
-            plugin.handleCancellable(p, event);
-        }
-    }
-
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        if (event.getEntity() instanceof Player) {
-            Player p = (Player) event.getEntity();
-            plugin.handleCancellable(p, event);
-        }
-    }
-
-    public void onEntityDamageByProjectile(EntityDamageByProjectileEvent event) {
-        if (event.getEntity() instanceof Player) {
-            Player p = (Player) event.getEntity();
-            plugin.handleCancellable(p, event);
-        }
-    }
-
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player) {
             Player p = (Player) event.getEntity();
@@ -56,10 +35,12 @@ public class AnjoSecurityEntityListener extends EntityListener {
         }
     }
 
+    @Override
     public void onEntityDeath(EntityDeathEvent event) {
         plugin.handleEntityDeath(event);
     }
 
+    @Override
     public void onEntityTarget(EntityTargetEvent event) {
         if (event.getTarget() instanceof Player) {
             Player p = (Player) event.getTarget();

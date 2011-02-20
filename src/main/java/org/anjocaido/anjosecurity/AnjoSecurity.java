@@ -132,9 +132,6 @@ public class AnjoSecurity extends JavaPlugin {
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);
 
         pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.ENTITY_TARGET, entityListener, Priority.Highest, this);
 
