@@ -27,7 +27,6 @@ public class AnjoSecurityEntityListener extends EntityListener {
         rc = plugin.getRegistrationControl();
     }
 
-    @Override
     public void onEntityDamageByBlock(EntityDamageByBlockEvent event) {
         if (event.getEntity() instanceof Player) {
             Player p = (Player) event.getEntity();

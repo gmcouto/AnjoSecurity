@@ -4,7 +4,8 @@
  */
 package org.anjocaido.anjosecurity;
 
-import org.anjocaido.groupmanager.Group;
+import org.anjocaido.groupmanager.data.*;
+import org.anjocaido.groupmanager.permissions.*;
 import org.anjocaido.groupmanager.GroupManager;
 import org.bukkit.Server;
 import org.bukkit.plugin.Plugin;
@@ -44,7 +45,7 @@ public class PermissionsDealer {
             Group lockDown = gm.getData().getGroup("NotRegistered");
             if(lockDown == null){
                 lockDown = gm.getData().createGroup("NotRegistered");
-                lockDown.variables = gm.getData().getDefaultGroup().variables.clone();
+                //lockDown.variables = gm.getData().getDefaultGroup().variables;
             }
             gm.getOverloadedClassData().overloadUser(userName);
             gm.getData().getUser(userName).setGroup(lockDown);

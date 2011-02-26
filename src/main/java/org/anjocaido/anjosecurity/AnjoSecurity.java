@@ -43,9 +43,9 @@ import org.bukkit.inventory.PlayerInventory;
  */
 public class AnjoSecurity extends JavaPlugin {
 
-    private final AnjoSecurityPlayerListener playerListener;
-    private final AnjoSecurityBlockListener blockListener;
-    private final AnjoSecurityEntityListener entityListener;
+    private AnjoSecurityPlayerListener playerListener;
+    private AnjoSecurityBlockListener blockListener;
+    private AnjoSecurityEntityListener entityListener;
     public Settings settings;
     private Properties queries;
     private RegistrationControl rc;
@@ -88,7 +88,6 @@ public class AnjoSecurity extends JavaPlugin {
 
     public void onEnable() {
 
-        super(pluginLoader, instance, desc, folder, plugin, cLoader);
         if (!this.getDataFolder().exists()) {
             this.getDataFolder().mkdirs();
         }
@@ -128,9 +127,9 @@ public class AnjoSecurity extends JavaPlugin {
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);
 
         pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Priority.Highest, this);
+        //pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Priority.Highest, this);
+        //pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Priority.Highest, this);
+        //pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.ENTITY_TARGET, entityListener, Priority.Highest, this);
 
