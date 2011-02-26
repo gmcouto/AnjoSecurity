@@ -74,7 +74,20 @@ public class AnjoSecurity extends JavaPlugin {
         }
     }
 
-    public AnjoSecurity(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
+    public void onDisable() {
+        // TODO: Place any custom disable code here
+
+        // NOTE: All registered events are automatically unregistered when a plugin is disabled
+
+        // EXAMPLE: Custom code, here we just output some info so we can check all is well
+        //System.out.println("Goodbye world!");
+        PluginDescriptionFile pdfFile = this.getDescription();
+        System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " is disabled!");
+
+    }
+
+    public void onEnable() {
+
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
         if (!this.getDataFolder().exists()) {
             this.getDataFolder().mkdirs();
@@ -93,23 +106,6 @@ public class AnjoSecurity extends JavaPlugin {
         playerListener = new AnjoSecurityPlayerListener(this);
         blockListener = new AnjoSecurityBlockListener(this);
         entityListener = new AnjoSecurityEntityListener(this);
-
-
-    }
-
-    public void onDisable() {
-        // TODO: Place any custom disable code here
-
-        // NOTE: All registered events are automatically unregistered when a plugin is disabled
-
-        // EXAMPLE: Custom code, here we just output some info so we can check all is well
-        //System.out.println("Goodbye world!");
-        PluginDescriptionFile pdfFile = this.getDescription();
-        System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " is disabled!");
-
-    }
-
-    public void onEnable() {
         // TODO: Place any custom enable code here including the registration of any events
         // Register our events
         PluginManager pm = getServer().getPluginManager();
