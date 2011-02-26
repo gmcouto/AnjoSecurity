@@ -109,7 +109,7 @@ public class AnjoSecurity extends JavaPlugin {
         // Register our events
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvent(Event.Type.PLAYER_CHAT, playerListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Priority.Lowest, this);
+        //pm.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Priority.Lowest, this);
         pm.registerEvent(Event.Type.PLAYER_DROP_ITEM, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.PLAYER_ITEM, playerListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.PLAYER_MOVE, playerListener, Priority.Highest, this);
