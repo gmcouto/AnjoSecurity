@@ -59,14 +59,6 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
         plugin.handleCancellable(p, event);
     }
 
-    /**
-     * Called when a player attempts to use a command
-     *
-     * @param event Relevant event details
-     */
-    public void onPlayerCommand(PlayerChatEvent event) {
-        plugin.handleCommand(event);
-    }
 
     /**
      * Called when a player attempts to move location in a world

@@ -1,3 +1,30 @@
 name: AnjoSecurity
 version: 1.3
 main: org.anjocaido.anjosecurity.AnjoSecurity
+commands:
+  login:
+    description: Log you.
+    usage: |
+           /<command> [password]
+           Example: /<command> Bukkit - Log you with Bukkit as password.
+  register:
+    description: Register your account.
+    usage: |
+           /<command> [password]
+           Example: /<command> Bukkit - Register your account with Bukkit as password.
+  reset:
+    description: If the password is correct, remove registration.
+    usage: |
+           /<command> [password]
+  adminreset:
+    description: Remove the registration of the given username.
+    usage: |
+           /<command> [username]
+  adminallow:
+    description: Allow user to register even if registration is deactivated.
+    usage: |
+           /<command> [username]
+  toggleregistration:
+    description: Toggle registration mode ON/OFF.
+    usage: |
+           /<command>

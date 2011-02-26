@@ -14,6 +14,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.bukkit.entity.Player;
 
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+
 /**
  *
  * @author gabrielcouto
