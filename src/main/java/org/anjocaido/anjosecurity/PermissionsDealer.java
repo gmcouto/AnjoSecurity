@@ -26,18 +26,21 @@ public class PermissionsDealer {
         if (plugin != null && plugin instanceof GroupManager) {
             gm = (GroupManager) plugin;
             loaded = true;
+            System.out.println("AnjoSecurity : GroupManager connection well etablished");
         } else {
             loaded = false;
+            System.out.println("AnjoSecurity : Failed to connect to GroupManager");
         }
     }
     public void markAsNotLoggedIn(String userName) {
         if (loaded) {
             Group lockDown = gm.getData().getGroup("NotLoggedIn");
             if(lockDown == null){
-                lockDown = gm.getData().createGroup("NotRegistered");
+                lockDown = gm.getData().createGroup("NotLoggedIn");
             }
             gm.getOverloadedClassData().overloadUser(userName);
             gm.getData().getUser(userName).setGroup(lockDown);
+            
         }
     }
     public void markAsNotRegistered(String userName) {
@@ -49,11 +52,13 @@ public class PermissionsDealer {
             }
             gm.getOverloadedClassData().overloadUser(userName);
             gm.getData().getUser(userName).setGroup(lockDown);
+            
         }
     }
     public void restorePermissions(String userName){
         if (loaded) {
             gm.getOverloadedClassData().removeOverload(userName);
+            
         }
     }
 }

@@ -205,8 +205,9 @@ public class AnjoSecurity extends JavaPlugin {
                         permDealer = new PermissionsDealer(this.getServer());
                     }
                     p.sendMessage(ChatColor.YELLOW + settings.getMsgWelcomeUser());
+                    permDealer.markAsNotLoggedIn(p.getName());
                     if (permDealer != null) {
-                        permDealer.markAsNotLoggedIn(p.getName());
+                        //permDealer.markAsNotLoggedIn(p.getName());
                     }
                 }
             } else {
@@ -272,7 +273,7 @@ public class AnjoSecurity extends JavaPlugin {
         if (cmd.getName().equalsIgnoreCase("reset")) {
             System.out.println("/reset ********");
             if (args.length != 1) {
-                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /reset <password>");
+                return false;
             } else {
                 if (rc.unregisterPlayer(p, args[0])) {
                     p.sendMessage(ChatColor.YELLOW + settings.getMsgUnregisterSucessful());
@@ -283,7 +284,7 @@ public class AnjoSecurity extends JavaPlugin {
             return true;
         } else if (cmd.getName().equalsIgnoreCase("adminreset")) {
             if (args.length != 1) {
-                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /reset <username>");
+                return false;
             } else {
                 if (isAdmin(p.getName())) {
                     if (rc.deletePlayer(args[0])) {
@@ -316,7 +317,7 @@ public class AnjoSecurity extends JavaPlugin {
             return true;
         } else if (cmd.getName().equalsIgnoreCase("toggleregistration")) {
             if (args.length != 0) {
-                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /toggleregistration");
+                return false;
             } else {
                 if (isAdmin(p.getName())) {
                     registrationsAllowed = !registrationsAllowed;
@@ -341,7 +342,7 @@ public class AnjoSecurity extends JavaPlugin {
             System.out.println("/login ********");
 
             if (args.length != 1) {
-                p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /login <password>");
+                return false;
 
             } else {
                 if (rc.logInByPass(p, args[0])) {
@@ -368,7 +369,7 @@ public class AnjoSecurity extends JavaPlugin {
             if (registrationsAllowed || allowedList.contains(p.getName().toLowerCase())) {
 
                 if (args.length != 1) {
-                    p.sendMessage(ChatColor.LIGHT_PURPLE + "Usage: /register <password>");
+                    return false;
                 } else {
                     if (rc.registerPlayer(p, args[0])) {
                         p.sendMessage(ChatColor.YELLOW + settings.getMsgRegisterSucessful());
@@ -388,7 +389,6 @@ public class AnjoSecurity extends JavaPlugin {
             return true;
         } else {
             if (!settings.isOptGuestsSummonCommands() || settings.isOptGuestsLockdown()) {
-
                 return false;
             }
         }
