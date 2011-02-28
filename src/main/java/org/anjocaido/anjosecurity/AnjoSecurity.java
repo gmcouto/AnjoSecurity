@@ -5,12 +5,8 @@
 package org.anjocaido.anjosecurity;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -43,9 +39,9 @@ import org.bukkit.inventory.PlayerInventory;
  */
 public class AnjoSecurity extends JavaPlugin {
 
-    private final AnjoSecurityPlayerListener playerListener;
-    private final AnjoSecurityBlockListener blockListener;
-    private final AnjoSecurityEntityListener entityListener;
+    private AnjoSecurityPlayerListener playerListener;
+    private AnjoSecurityBlockListener blockListener;
+    private AnjoSecurityEntityListener entityListener;
     public Settings settings;
     private Properties queries;
     private RegistrationControl rc;
@@ -74,8 +70,21 @@ public class AnjoSecurity extends JavaPlugin {
         }
     }
 
-    public AnjoSecurity(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
-        super(pluginLoader, instance, desc, folder, plugin, cLoader);
+    @Override
+    public void onDisable() {
+        // TODO: Place any custom disable code here
+
+        // NOTE: All registered events are automatically unregistered when a plugin is disabled
+
+        // EXAMPLE: Custom code, here we just output some info so we can check all is well
+        //System.out.println("Goodbye world!");
+        PluginDescriptionFile pdfFile = this.getDescription();
+        System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " is disabled!");
+
+    }
+
+    @Override
+    public void onEnable() {
         if (!this.getDataFolder().exists()) {
             this.getDataFolder().mkdirs();
         }
@@ -95,21 +104,6 @@ public class AnjoSecurity extends JavaPlugin {
         entityListener = new AnjoSecurityEntityListener(this);
 
 
-    }
-
-    public void onDisable() {
-        // TODO: Place any custom disable code here
-
-        // NOTE: All registered events are automatically unregistered when a plugin is disabled
-
-        // EXAMPLE: Custom code, here we just output some info so we can check all is well
-        //System.out.println("Goodbye world!");
-        PluginDescriptionFile pdfFile = this.getDescription();
-        System.out.println(pdfFile.getName() + " version " + pdfFile.getVersion() + " is disabled!");
-
-    }
-
-    public void onEnable() {
         // TODO: Place any custom enable code here including the registration of any events
         // Register our events
         PluginManager pm = getServer().getPluginManager();
@@ -153,27 +147,38 @@ public class AnjoSecurity extends JavaPlugin {
     }
 
     public void handleCancellable(Player p, Cancellable event) {
-        if (event instanceof EntityDamageEvent && godModeList.contains(p.getName().toLowerCase())) {
-            event.setCancelled(true);
-        }
         if (p == null) {
             event.setCancelled(true);
             return;
         }
+        if (event instanceof EntityDamageEvent && godModeList.contains(p.getName().toLowerCase())) {
+            event.setCancelled(true);
+        }
         PlayerStatus status = rc.getStatus(p);
         if (status.equals(PlayerStatus.LOGGED_IN)) {
+            if (godModeList.contains(p.getName().toLowerCase())) {
+                if (p.getHealth() != 0) {
+                    p.setHealth(20);
+                }
+            }
         } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
             event.setCancelled(true);
             alertLogin(p);
+            //if (p.getHealth() > 0) {
             p.setHealth(20);
+            //}
 
         } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
             if (settings.isOptGuestsLockdown()) {
                 event.setCancelled(true);
                 alertRegister(p);
+                //if (p.getHealth() > 0) {
                 p.setHealth(20);
+                //}
             }
         }
+
+        //System.out.println("Returned"+Boolean.toString(event.isCancelled()));
     }
 
     public void handleEntityDeath(EntityDeathEvent event) {
@@ -181,13 +186,14 @@ public class AnjoSecurity extends JavaPlugin {
             Player p = (Player) event.getEntity();
             PlayerStatus status = rc.getStatus(p);
             if (status.equals(PlayerStatus.LOGGED_IN)) {
+                p.getInventory().clear();
             } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
                 event.getDrops().clear();
-                p.setHealth(20);
             } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
                 if (settings.isOptGuestsLockdown()) {
                     event.getDrops().clear();
-                    p.setHealth(20);
+                } else {
+                    p.getInventory().clear();
                 }
             }
         }
@@ -206,6 +212,7 @@ public class AnjoSecurity extends JavaPlugin {
                     if (permDealer != null) {
                         permDealer.markAsNotLoggedIn(p.getName());
                     }
+                    p.setHealth(20);
                 }
             } else {
                 p.sendMessage(ChatColor.YELLOW + settings.getMsgWelcomeGuest());
@@ -239,6 +246,8 @@ public class AnjoSecurity extends JavaPlugin {
     }
 
     public void handleCommand(PlayerChatEvent event) {
+        //System.out.println("Event Cancellable: " + event.getClass().getName());
+        //System.out.println("Message: " + event.getMessage());
         Player p = event.getPlayer();
         if (p == null) {
             event.setCancelled(true);
@@ -254,6 +263,7 @@ public class AnjoSecurity extends JavaPlugin {
         } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
             handleCommandsWhileGuestMode(event);
         }
+        //System.out.println("Returned: " + Boolean.toString(event.isCancelled()));
     }
 
     public void handleCommandsWhileLoggedIn(PlayerChatEvent event) {
@@ -293,7 +303,7 @@ public class AnjoSecurity extends JavaPlugin {
                     if (victim.size() == 1) {
                         allowedList.add(victim.get(0).getName().toLowerCase());
                         p.sendMessage(ChatColor.YELLOW + settings.getMsgAllowedSuccessful());
-                        victim.get(0).sendMessage(ChatColor.GOLD+settings.getMsgAlertAllowed());
+                        victim.get(0).sendMessage(ChatColor.GOLD + settings.getMsgAlertAllowed());
                     } else {
                         p.sendMessage(ChatColor.YELLOW + settings.getMsgAllowedFailed());
                     }
@@ -329,7 +339,6 @@ public class AnjoSecurity extends JavaPlugin {
             } else {
                 if (rc.logInByPass(p, command[1])) {
                     p.sendMessage(ChatColor.YELLOW + settings.getMsgLoginPass());
-                    p.setHealth(20);
                     permDealer.restorePermissions(p.getName());
                     godModeList.add(p.getName().toLowerCase());
                     scheduler.schedule(new GodModeRemover(p.getName().toLowerCase()), 5, TimeUnit.SECONDS);
@@ -359,7 +368,7 @@ public class AnjoSecurity extends JavaPlugin {
                         p.sendMessage(ChatColor.RED + "Remember, your password is: " + command[1]);
                         permDealer.restorePermissions(p.getName());
                         permDealer.markAsNotRegistered(p.getName());
-                        if(allowedList.contains(p.getName().toLowerCase())){
+                        if (allowedList.contains(p.getName().toLowerCase())) {
                             allowedList.remove(p.getName().toLowerCase());
                         }
                     } else {
