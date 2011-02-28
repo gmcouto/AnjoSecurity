@@ -100,6 +100,7 @@ public class AnjoSecurity extends JavaPlugin {
         //
         //
         //
+        //
         settings = new Settings(settingsFile);
         registrationsAllowed = settings.isRegistrationEnabled();
         //
