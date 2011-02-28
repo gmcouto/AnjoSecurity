@@ -1,5 +1,5 @@
 name: AnjoSecurity
-version: 1.3
+version: 1.6
 main: org.anjocaido.anjosecurity.AnjoSecurity
 commands:
   login:

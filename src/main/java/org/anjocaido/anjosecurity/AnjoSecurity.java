@@ -5,12 +5,8 @@
 package org.anjocaido.anjosecurity;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -79,6 +75,8 @@ public class AnjoSecurity extends JavaPlugin {
         }
     }
 
+
+    @Override
     public void onDisable() {
         // TODO: Place any custom disable code here
 
@@ -91,8 +89,9 @@ public class AnjoSecurity extends JavaPlugin {
 
     }
 
-    public void onEnable() {
 
+    @Override
+    public void onEnable() {
         if (!this.getDataFolder().exists()) {
             this.getDataFolder().mkdirs();
         }
@@ -111,6 +110,8 @@ public class AnjoSecurity extends JavaPlugin {
         playerListener = new AnjoSecurityPlayerListener(this);
         blockListener = new AnjoSecurityBlockListener(this);
         entityListener = new AnjoSecurityEntityListener(this);
+
+
         // TODO: Place any custom enable code here including the registration of any events
         // Register our events
         PluginManager pm = getServer().getPluginManager();
@@ -132,9 +133,6 @@ public class AnjoSecurity extends JavaPlugin {
         pm.registerEvent(Event.Type.SIGN_CHANGE, blockListener, Priority.Highest, this);
 
         pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Priority.Highest, this);
-        pm.registerEvent(Event.Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Highest, this);
         pm.registerEvent(Event.Type.ENTITY_TARGET, entityListener, Priority.Highest, this);
 
@@ -156,27 +154,38 @@ public class AnjoSecurity extends JavaPlugin {
     }
 
     public void handleCancellable(Player p, Cancellable event) {
-        if (event instanceof EntityDamageEvent && godModeList.contains(p.getName().toLowerCase())) {
-            event.setCancelled(true);
-        }
         if (p == null) {
             event.setCancelled(true);
             return;
         }
+        if (event instanceof EntityDamageEvent && godModeList.contains(p.getName().toLowerCase())) {
+            event.setCancelled(true);
+        }
         PlayerStatus status = rc.getStatus(p);
         if (status.equals(PlayerStatus.LOGGED_IN)) {
+            if (godModeList.contains(p.getName().toLowerCase())) {
+                if (p.getHealth() != 0) {
+                    p.setHealth(20);
+                }
+            }
         } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
             event.setCancelled(true);
             alertLogin(p);
+            //if (p.getHealth() > 0) {
             p.setHealth(20);
+            //}
 
         } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
             if (settings.isOptGuestsLockdown()) {
                 event.setCancelled(true);
                 alertRegister(p);
+                //if (p.getHealth() > 0) {
                 p.setHealth(20);
+                //}
             }
         }
+
+        //System.out.println("Returned"+Boolean.toString(event.isCancelled()));
     }
 
     public void handleEntityDeath(EntityDeathEvent event) {
@@ -184,13 +193,14 @@ public class AnjoSecurity extends JavaPlugin {
             Player p = (Player) event.getEntity();
             PlayerStatus status = rc.getStatus(p);
             if (status.equals(PlayerStatus.LOGGED_IN)) {
+                p.getInventory().clear();
             } else if (status.equals(PlayerStatus.NOT_LOGGED_IN)) {
                 event.getDrops().clear();
-                p.setHealth(20);
             } else if (status.equals(PlayerStatus.NOT_REGISTERED)) {
                 if (settings.isOptGuestsLockdown()) {
                     event.getDrops().clear();
-                    p.setHealth(20);
+                } else {
+                    p.getInventory().clear();
                 }
             }
         }
@@ -210,6 +220,7 @@ public class AnjoSecurity extends JavaPlugin {
                     if (permDealer != null) {
                         //permDealer.markAsNotLoggedIn(p.getName());
                     }
+                    p.setHealth(20);
                 }
             } else {
                 p.sendMessage(ChatColor.YELLOW + settings.getMsgWelcomeGuest());
@@ -348,7 +359,6 @@ public class AnjoSecurity extends JavaPlugin {
             } else {
                 if (rc.logInByPass(p, args[0])) {
                     p.sendMessage(ChatColor.YELLOW + settings.getMsgLoginPass());
-                    p.setHealth(20);
                     permDealer.restorePermissions(p.getName());
                     godModeList.add(p.getName().toLowerCase());
                     scheduler.schedule(new GodModeRemover(p.getName().toLowerCase()), 5, TimeUnit.SECONDS);
