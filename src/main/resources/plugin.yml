@@ -1,3 +1,27 @@
 name: AnjoSecurity
-version: 1.6
+version: 1.6c
 main: org.anjocaido.anjosecurity.AnjoSecurity
+website: http://www.anjocaido.info/
+description: Provides an authentication system, other than Minecraft.net
+authors:
+  - AnjoCaido
+  - Gabriel Couto
+commands:
+  login:
+    description: Login to your account.
+    usage: /<command> <password>
+  register:
+    description: Register an account with your name.
+    usage: /<command> <password>
+  reset:
+    description: Deletes your account
+    usage: /<command> <password>
+  adminreset:
+    description: Removes a player account
+    usage: /<command> <player>
+  adminallow:
+    description: Allow player to register, even with registration off.
+    usage: /<command> <player>
+  toggleregistration:
+    description: Toggle registrations ON/OFF.
+    usage: /<command>

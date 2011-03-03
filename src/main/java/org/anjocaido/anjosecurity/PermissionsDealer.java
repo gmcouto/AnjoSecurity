@@ -8,7 +8,11 @@ import java.util.HashMap;
 import java.util.Map;
 import org.anjocaido.groupmanager.GroupManager;
 import org.anjocaido.groupmanager.data.Group;
+import org.anjocaido.groupmanager.dataholder.OverloadedWorldHolder;
+import org.anjocaido.groupmanager.dataholder.WorldDataHolder;
+import org.anjocaido.groupmanager.permissions.AnjoPermissionsHandler;
 import org.bukkit.Server;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 
@@ -36,35 +40,41 @@ public class PermissionsDealer {
             System.out.println("AnjoSecurity couldn't load GroupManager!");
         }
     }
-    public void markAsNotLoggedIn(String userName) {
+    public void markAsNotLoggedIn(Player player) {
         if (loaded) {
-            Group lockDown = gm.getData().getGroup("NotLoggedIn");
+            OverloadedWorldHolder perm = gm.getWorldsHolder().getWorldData(player);
+            Group lockDown = perm.getGroup("NotLoggedIn");
             if(lockDown == null){
-                lockDown = gm.getData().createGroup("NotLoggedIn");
+                lockDown = perm.createGroup("NotLoggedIn");
             }
-            gm.getOverloadedClassData().overloadUser(userName);
-            gm.getData().getUser(userName).setGroup(lockDown);
-            //System.out.println("Logou, grupo: "+gm.getData().getUser(userName).getGroup().getName());
+            System.out.println("Antes "+perm.getUser(player.getName()).getGroupName());
+            perm.overloadUser(player.getName());
+            perm.getUser(player.getName()).setGroup(lockDown);
+            System.out.println("Depois "+perm.getUser(player.getName()).getGroupName());
         }
     }
-    public void markAsNotRegistered(String userName) {
+    public void markAsNotRegistered(Player player) {
         if (loaded) {
-            Group lockDown = gm.getData().getGroup("NotRegistered");
+            OverloadedWorldHolder perm = gm.getWorldsHolder().getWorldData(player);
+            Group lockDown = perm.getGroup("NotRegistered");
             if(lockDown == null){
-                lockDown = gm.getData().createGroup("NotRegistered");
+                lockDown = perm.createGroup("NotRegistered");
                 Map<String, Object> vars = new HashMap<String, Object>();
-                for(String key: gm.getData().getDefaultGroup().getVariables().getVarKeyList()){
-                    vars.put(key, gm.getData().getDefaultGroup().getVariables().getVarObject(key));
+                for(String key: perm.getDefaultGroup().getVariables().getVarKeyList()){
+                    vars.put(key, perm.getDefaultGroup().getVariables().getVarObject(key));
                 }
                 lockDown.setVariables(vars);
             }
-            gm.getOverloadedClassData().overloadUser(userName);
-            gm.getData().getUser(userName).setGroup(lockDown);
+            perm.overloadUser(player.getName());
+            perm.getUser(player.getName()).setGroup(lockDown);
         }
     }
-    public void restorePermissions(String userName){
+    public void restorePermissions(Player player){
         if (loaded) {
-            gm.getOverloadedClassData().removeOverload(userName);
+            OverloadedWorldHolder perm = gm.getWorldsHolder().getWorldData(player);
+            System.out.println("Antes "+perm.getUser(player.getName()).getGroupName());
+            perm.removeOverload(player.getName());
+            System.out.println("Depois "+perm.getUser(player.getName()).getGroupName());
         }
     }
 }

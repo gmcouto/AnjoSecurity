@@ -5,7 +5,7 @@
     <groupId>org.anjocaido</groupId>
     <artifactId>AnjoSecurity</artifactId>
     <packaging>jar</packaging>
-    <version>1.6b-SNAPSHOT</version>
+    <version>1.6c-SNAPSHOT</version>
     <name>AnjoSecurity</name>
     <url>http://maven.apache.org</url>
     <build>
@@ -61,7 +61,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>GroupManager</artifactId>
-            <version>0.99c-SNAPSHOT</version>
+            <version>1.0-pre-alpha-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <properties>

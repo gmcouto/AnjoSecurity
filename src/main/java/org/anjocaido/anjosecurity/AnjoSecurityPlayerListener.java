@@ -26,6 +26,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerJoin(PlayerEvent event) {
         //System.out.println("Join");
         plugin.handlePlayerJoin(event.getPlayer());
@@ -36,6 +37,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerQuit(PlayerEvent event) {
         //System.out.println("LogOut!");
         plugin.handlePlayerLogOut(event.getPlayer());
@@ -46,6 +48,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerKick(PlayerKickEvent event) {
     }
 
@@ -54,6 +57,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerChat(PlayerChatEvent event) {
         Player p = event.getPlayer();
         plugin.handleCancellable(p, event);
@@ -65,7 +69,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      * @param event Relevant event details
      */
     public void onPlayerCommand(PlayerChatEvent event) {
-        plugin.handleCommand(event);
+        //plugin.handleCommand(event);
     }
 
     /**
@@ -73,6 +77,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerMove(PlayerMoveEvent event) {
         Player p = event.getPlayer();
         plugin.handleCancellable(p, event);
@@ -86,6 +91,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerTeleport(PlayerMoveEvent event) {
         Player p = event.getPlayer();
         plugin.handleCancellable(p, event);
@@ -99,6 +105,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerRespawn(PlayerRespawnEvent event) {
 
     }
@@ -108,6 +115,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerItem(PlayerItemEvent event) {
         Player p = event.getPlayer();
         plugin.handleCancellable(p, event);
@@ -118,6 +126,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerLogin(PlayerLoginEvent event) {
         //System.out.println("Login");
         //plugin.handlePlayerLogin(event);
@@ -128,6 +137,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerEggThrow(PlayerEggThrowEvent event) {
 
     }
@@ -137,6 +147,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerAnimation(PlayerAnimationEvent event) {
 
     }
@@ -146,6 +157,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onInventoryOpen(PlayerInventoryEvent event) {
     }
 
@@ -154,6 +166,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onItemHeldChange(PlayerItemHeldEvent event) {
 
     }
@@ -163,6 +176,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         Player p = event.getPlayer();
         plugin.handleCancellable(p, event);
@@ -173,6 +187,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerPickupItem(PlayerPickupItemEvent event) {
         Player p = event.getPlayer();
         plugin.handleCancellable(p, event);
@@ -183,6 +198,7 @@ public class AnjoSecurityPlayerListener extends PlayerListener {
      *
      * @param event Relevant event details
      */
+    @Override
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player p = event.getPlayer();
         plugin.handleCancellable(p, event);
